@@ -1,3 +1,5 @@
+// MELAKUKAN KONEKSI KE ELASTICSEARCH 
+
 const es = require('elasticsearch')
 const esClient = new es.Client({
   host: 'localhost:9200',

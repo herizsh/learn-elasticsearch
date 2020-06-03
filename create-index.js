@@ -1,4 +1,4 @@
-// Membuat Indeks di Elasticsearch
+// MEMBUAT INDEX/DATABASE PADA ELASTIC SEARCH
 // Indeks dalam Elasticsearch dianalogikan dengan basis data di mesin penyimpanan lain
 // (misalnya: MongoDB).
 

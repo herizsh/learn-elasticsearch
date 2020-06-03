@@ -1,4 +1,4 @@
-// Membuat pemetaan di ElasticSearch
+// MEMBUAT MAPPING/PEMETAAN PADA ELASTICSEARCH
 // Pemetaan seperti mendefinisikan struktur untuk dokumen,
 // untuk menentukan bagaimana dokumen akan disimpan dan diindeks.
 
@@ -8,7 +8,8 @@ const addmappingToIndex = async function (indexName, mappingType, mapping) {
   return await esClient.indices.putMapping({
     index: indexName,
     type: mappingType,
-    body: mapping
+    body: mapping,
+    includeTypeName: true
   })
 }
 

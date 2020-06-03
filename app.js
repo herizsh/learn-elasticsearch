@@ -1,9 +1,14 @@
 const express = require('express')
+const cors = require('cors')
 const esClient = require('./client')
 const app = express()
 const port = 3000
 
-// melakukan test apakah elasticsearch sedang berjalan atau tidak
+app.use(cors())
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
+
+// MELAKUKAN TEST APAKAH ELASTICSEARCH SEDANG BERJALAN ATAU TIDAK
 app.get('/ping', (req, res, next) => {
   esClient.ping(
     {
@@ -20,30 +25,52 @@ app.get('/ping', (req, res, next) => {
   )
 })
 
-// Mengindeks Data ke dalam Elasticsearch
+// MENGINDEKS ATAU INSERT DATA KE DALAM ELASTICSEARCH
 // Pengindeksan Data pada dasarnya berarti memasukkan data ke dalam Elasticsearch.
-app.post('insertdocument', (req, res, next) => {
-  // const data = {
-  //   title: 'Learn elastic search',
-  //   tags: ['NodeJS', 'Programming'],
-  //   body: `Lot of content here...`
-  // }
+// contoh req.body:
+// {
+// 	"indexName": "blog",
+// 	"mappingName": "posts",
+// 	"documentBody": {
+// 		"title": "Learn elastic search by ramadesi",
+// 	  "tags": ["NodeJS", "Programming"],
+//   	"body" : "Lot of content here..."
+// 	}
+// }
+app.post('/insertdocument', (req, res, next) => {
+  const { indexName, mappingType, documentBody } = req.body
+
   esClient
     .index({
       index: indexName,
       type: mappingType,
-      // bisa tanpa id, nanti auto generate
-      // id: _id,
-      body: req.body
+      // ketika create document, kita bisa menggunakan id atau tanpa menggunakan id.
+      // jika tanpa menggunakan id makan elasticsearch akan menggenerate id secara otomatis
+      // id: 'id'
+      body: documentBody
     })
     .then((resp) => {
+      console.log(resp, 'INI HASILNYA')
       res.send(resp)
     })
     .catch(next)
 })
 
-// melakukan update pada suatu dokumen
-app.post('update', (req, res, next) => {
+// MELAKUKAN UPDATE PADA SUATU DOKUMEN
+// syntax ketika melakukan update pada suatu document sama dengan ketika kita insert dengan menggunakan id
+
+// contoh req.body:
+// {
+// 	"indexName": "blog",
+// 	"mappingName": "posts",
+// 	"id": "ZJZyd3IBQ9fRW0GaAIa5",
+// 	"documentBody": {
+// 		"title": "Learn elastic search by ramadesi",
+// 	  "tags": ["NodeJS", "Programming"],
+//   	"body" : "Lot of content here..."
+// 	}
+// }
+app.post('/update', (req, res, next) => {
   const { indexName, mappingType, id, documentBody } = req.body
   esClient
     .index({
@@ -58,17 +85,23 @@ app.post('update', (req, res, next) => {
     .catch(next)
 })
 
-// Melakukan pencarian sederhana di Elasticsearch
+// MELAKUKAN PENCARIAN SEDERHANA DI ELASTICSEARCH
+
+// contoh req.body :
+// {
+// 	"indexName": "blog",
+// 	"mappingName": "posts",
+// 	"payload": {
+//      "query": {
+//        "match": {
+//          "title": "Learn"
+//        }
+//      }
+//    }
+// }
+
 app.post('/search', (req, res, next) => {
   const { indexName, mappingType, payload } = req.body
-  // Contoh pencarian dibawah ini akan menghasilkan item yang judulnya bertuliskan ‘Learn‘.
-  // const body = {
-  //   query: {
-  //     match: {
-  //       title: 'Learn'
-  //     }
-  //   }
-  // }
   esClient
     .search({
       index: indexName,
@@ -81,10 +114,10 @@ app.post('/search', (req, res, next) => {
     .catch(next)
 })
 
-// Pencarian saat kita mengetik ElasticSearch
+// MELAKUKAN PENCARIAN SAAT KITA MENGETIK
 // Pencarian elastis memiliki berbagai variasi pencarian,
 // pada contoh sebelumnya pencarian akan cocok dengan seluruh kata yang dilewatkan dalam kueri,
-//  sehingga artikel yang memiliki kata 'Learn' dalam judul akan ditampilkan.
+// sehingga artikel yang memiliki kata 'Learn' dalam judul akan ditampilkan.
 // Tetapi jika Anda mencoba mengubahnya menjadi `L` atau‘ Lear ’,
 // itu tidak akan memberi hasil apa pun.
 
@@ -92,15 +125,23 @@ app.post('/search', (req, res, next) => {
 // Ini membantu dalam mengembalikan hasil pencarian saat Anda mengetik pencarian Anda.
 // Contoh yang sering kita temui adalah seperti saat kita mencari sesuatu di google.
 
+// contoh req.body:
+
+// {
+// 	"indexName": "blog",
+// 	"mappingName": "posts",
+// 	"payload": {
+//      "query": {
+//        "match_phrase_prefix": {
+//          "title": "Lea"
+//        }
+//      }
+//    }
+// }
+
 app.post('/searchasyoutype', (req, res, next) => {
   const { indexName, mappingType, payload } = req.body
-  // const body = {
-  //   query: {
-  //     match_phrase_prefix: {
-  //       title: 'Lea'
-  //     }
-  //   }
-  // }
+
   esClient
     .search({
       index: indexName,
@@ -113,29 +154,35 @@ app.post('/searchasyoutype', (req, res, next) => {
     .catch(next)
 })
 
-// Agregasi dalam Elasticsearch
+// AGREGRASI DALAM PENCARIAN ELASTICSEARCH
 // Ini adalah salah satu jenis pencarian terpenting yang tersedia di Elasticsearch.
-
 // Jika Anda pernah menggunakan amazon untuk membeli sesuatu
 // biasanya ketika kita melakukan pencarian akan muncul seperti berikut:
 // "Keyboard di Aksesoris Komputer", "pisau di Peralatan Dapur"
 // contoh lainnya adalah, muncul kategori beserta jumlahnya seperti Windows (10), Ubuntu (4).
+
+// contoh req.body :
+
+// {
+// 	"indexName": "blog",
+// 	"mappingName": "posts",
+// 	"payload": {
+//      "query": {
+//        "match_phrase_prefix": {
+//          "title": "Lea"
+//        }
+//      },
+// 		"aggs": {
+//        "tags": {
+//          "terms": {
+//            "field": "tags"
+//          }
+//        }
+//      }
+//    }
+// }
 app.post('/searchwithaggregation', (req, res, next) => {
   const { indexName, mappingType, payload } = req.body
-  // const body = {
-  //   query: {
-  //     match_phrase_prefix: {
-  //       title: 'Learn'
-  //     }
-  //   },
-  //   aggs: {
-  //     tags: {
-  //       terms: {
-  //         field: 'tags'
-  //       }
-  //     }
-  //   }
-  // }
 
   esClient
     .search({
@@ -149,7 +196,14 @@ app.post('/searchwithaggregation', (req, res, next) => {
     .catch(next)
 })
 
-// menghapus document dari index
+// MENGHAPUS DOKUMEN DARI INDEX
+// contoh req.body :
+// {
+// 	"indexName": "blog",
+// 	"mappingName": "posts",
+// 	"id" : "ZJZyd3IBQ9fRW0GaAIa5"
+// }
+
 app.post('/delete', (req, res, next) => {
   const { indexName, mappingType, id } = req.body
   esClient
@@ -159,6 +213,7 @@ app.post('/delete', (req, res, next) => {
       id: id
     })
     .then((resp) => {
+      console.log(resp, 'deleted')
       res.send(resp)
     })
     .catch(next)
